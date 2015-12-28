@@ -32,9 +32,6 @@ func init() {
 	if channelName == "" {
 		log.Fatal("Please specify a channel using -channel")
 	}
-	if mappingFilePath == "" {
-		log.Fatal("Please specify a mapping file using -mapping")
-	}
 }
 
 func main() {
@@ -46,7 +43,29 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	defer store.Stop()
+	if mappingFilePath == "" {
+		http.HandleFunc("/mapping/", func(w http.ResponseWriter, r *http.Request) {
+			defer r.Body.Close()
+			if r.Method != "POST" {
+				http.Error(w, "Method not supported", http.StatusMethodNotAllowed)
+				return
+			}
+			if err := store.UpdateStore(r.Body); err != nil {
+				log.Print(err.Error())
+				if err == errInvalidCSV {
+					http.Error(w, "Invalid CSV", http.StatusBadRequest)
+					return
+				}
+				http.Error(w, "Server error", http.StatusInternalServerError)
+			}
+		})
+	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			r.Body.Close()
+			http.Error(w, "Method not supported", http.StatusMethodNotAllowed)
+			return
+		}
 		if err := r.ParseForm(); err != nil {
 			log.Print(err.Error())
 			http.Error(w, "Failed to parse request", 500)

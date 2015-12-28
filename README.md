@@ -31,6 +31,16 @@ Details about how to configure a command in Slack can be found
 $ ./carparkbot -token <SlackCommandToken> -channel <YourGeneralChannel> -mapping path/to/mapping.csv
 ```
 
+If you don't specify a mapping file, you have to provide that dynamically. You
+can do so by sending the CSV-formatted data via POST to the `/mapping/`
+endpoint:
+
+```
+$ http POST https://localhost:8080/mapping/ < mapping.csv
+```
+
+**Warning:** Make sure to put some AUTH around the `/mapping/` endpoint.
+
 
 ## How to build
 

@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"sync"
@@ -18,18 +19,29 @@ type mappingStore struct {
 	lock    *sync.RWMutex
 }
 
-func (m *mappingStore) updateStore() error {
+var errInvalidCSV error = fmt.Errorf("Invalid CSV data")
+
+func (m *mappingStore) UpdateStore(fp io.Reader) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	fp, err := os.Open(m.path)
-	if err != nil {
-		return err
+	if fp == nil {
+		if m.path == "" {
+			return nil
+		}
+		fp, err := os.Open(m.path)
+		if err != nil {
+			return err
+		}
+		defer fp.Close()
 	}
-	defer fp.Close()
 	r := csv.NewReader(fp)
 	for {
 		record, err := r.Read()
 		if err == nil {
+			if len(record) != 2 {
+				io.Copy(ioutil.Discard, fp)
+				return errInvalidCSV
+			}
 			m.data[record[0]] = record[1]
 		} else if err == io.EOF {
 			break
@@ -50,7 +62,7 @@ func (m *mappingStore) handleEvent(evt fsnotify.Event) error {
 		log.Printf("File was removed. Continuing to use old data.")
 		return nil
 	}
-	return m.updateStore()
+	return m.UpdateStore(nil)
 }
 
 func (m *mappingStore) handleRename(evt fsnotify.Event) {
@@ -69,8 +81,12 @@ func (m *mappingStore) LookupPlate(plate string) (string, bool) {
 }
 
 func (m *mappingStore) Start() error {
-	if err := m.updateStore(); err != nil {
+	if err := m.UpdateStore(nil); err != nil {
 		return err
+	}
+	if m.path == "" {
+		log.Print("No mapping file provided, using explicit updates.")
+		return nil
 	}
 	go func() {
 		for {
