@@ -21,4 +21,23 @@ The license plate should not include any hyphens or spaces.
 If you change the content of that mapping file, the internal store is updated so
 you don't have to restart the command endpoint every time a new mapping is added.
 
-Details about how to configure a command in Slack can be found [here](https://api.slack.com/slash-commands).
+Details about how to configure a command in Slack can be found
+[here](https://api.slack.com/slash-commands).
+
+
+## Usage
+
+```
+$ ./carparkbot -token <SlackCommandToken> -channel <YourGeneralChannel> -mapping path/to/mapping.csv
+```
+
+
+## How to build
+
+First you have to have [glide](https://github.com/Masterminds/glide)
+installed. After that:
+
+```
+$ glide install
+$ go build
+```
