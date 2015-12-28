@@ -1,0 +1,6 @@
+hash: cc5afbfe08608b7d2312e9a1deadf1facd60f2c80f37b846670e833abfbb8667
+updated: 2015-12-28T12:02:03.551999333+01:00
+imports:
+- name: gopkg.in/fsnotify.v1
+  version: 508915b7500b6e42a87132e4afeb4729cebc7cbb
+devImports: []
