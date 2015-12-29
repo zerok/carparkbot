@@ -31,6 +31,16 @@ Details about how to configure a command in Slack can be found
 $ ./carparkbot -token <SlackCommandToken> -channel <YourGeneralChannel> -mapping path/to/mapping.csv
 ```
 
+
+### Direct messages for notification
+
+If you additionally want to send a direct message to a car holder, you have to
+generate an [API token](https://api.slack.com/web) and start the bot with the
+`-dm` and `-api-token=YOURTOKEN` parameters.
+
+
+### Dynamic mapping
+
 If you don't specify a mapping file, you have to provide that dynamically. You
 can do so by sending the CSV-formatted data via POST to the `/mapping/`
 endpoint:

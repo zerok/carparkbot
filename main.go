@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -13,6 +15,8 @@ import (
 var (
 	token           string
 	channelName     string
+	enableDM        bool
+	apiToken        string
 	mappingFilePath string
 	port            string
 )
@@ -21,6 +25,8 @@ var plateChars *regexp.Regexp = regexp.MustCompile(`[^a-zA-Z0-9]`)
 
 func init() {
 	flag.StringVar(&token, "token", "", "Command token for validation")
+	flag.StringVar(&apiToken, "api-token", "", "Token required for sending direct messages")
+	flag.BoolVar(&enableDM, "dm", false, "Also DM the car holder")
 	flag.StringVar(&channelName, "channel", "", "Supported channel")
 	flag.StringVar(&mappingFilePath, "mapping", "", "Path to a mapping file")
 	flag.StringVar(&port, "port", "8080", "Port to run on")
@@ -31,6 +37,9 @@ func init() {
 	}
 	if channelName == "" {
 		log.Fatal("Please specify a channel using -channel")
+	}
+	if enableDM && apiToken == "" {
+		log.Fatal("You have to specify an API token using -api-token if you want to send direct messages.")
 	}
 }
 
@@ -85,16 +94,36 @@ func main() {
 			return
 		}
 		user := r.Form["user_name"][0]
-		if user == holder {
-			sendInlineResponse(w, "You have blocked yourself. Congratulations!")
-			return
+		// if user == holder {
+		// 	sendInlineResponse(w, "You have blocked yourself. Congratulations!")
+		// 	return
+		// }
+		sendChannelResponse(w, fmt.Sprintf("<@%s>: Your :car: is blocking <@%s>! Please move it.", holder, user))
+		if enableDM && apiToken != "" {
+			msg := fmt.Sprintf("Your :car: is blocking <@%s>! Please move it.", user)
+			sendDM(apiToken, holder, msg)
 		}
-		sendChannelResponse(w, fmt.Sprintf("@%s: Your :car: is blocking @%s! Please move it.", holder, user))
 	})
 	log.Printf("Starting server on port %s", port)
 	if err = http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
 		log.Fatal(err.Error())
 	}
+}
+
+func sendDM(token, blockingPerson, msg string) error {
+	resp, err := http.PostForm("https://slack.com/api/chat.postMessage", url.Values{
+		"token":   {token},
+		"channel": {fmt.Sprintf("@%s", blockingPerson)},
+		"text":    {msg},
+	})
+	if err != nil {
+		return err
+	}
+	defer ioutil.NopCloser(resp.Body)
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("Unexpected response code received during DM-sending: %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func extractPlate(r *http.Request) string {

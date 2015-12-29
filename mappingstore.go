@@ -21,10 +21,10 @@ type mappingStore struct {
 
 var errInvalidCSV error = fmt.Errorf("Invalid CSV data")
 
-func (m *mappingStore) UpdateStore(fp io.Reader) error {
+func (m *mappingStore) UpdateStore(data io.Reader) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if fp == nil {
+	if data == nil {
 		if m.path == "" {
 			return nil
 		}
@@ -32,14 +32,15 @@ func (m *mappingStore) UpdateStore(fp io.Reader) error {
 		if err != nil {
 			return err
 		}
+		data = fp
 		defer fp.Close()
 	}
-	r := csv.NewReader(fp)
+	r := csv.NewReader(data)
 	for {
 		record, err := r.Read()
 		if err == nil {
 			if len(record) != 2 {
-				io.Copy(ioutil.Discard, fp)
+				io.Copy(ioutil.Discard, data)
 				return errInvalidCSV
 			}
 			m.data[record[0]] = record[1]
