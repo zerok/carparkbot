@@ -94,10 +94,10 @@ func main() {
 			return
 		}
 		user := r.Form["user_name"][0]
-		// if user == holder {
-		// 	sendInlineResponse(w, "You have blocked yourself. Congratulations!")
-		// 	return
-		// }
+		if user == holder {
+			sendInlineResponse(w, "You have blocked yourself. Congratulations!")
+			return
+		}
 		sendChannelResponse(w, fmt.Sprintf("<@%s>: Your :car: is blocking <@%s>! Please move it.", holder, user))
 		if enableDM && apiToken != "" {
 			msg := fmt.Sprintf("Your :car: is blocking <@%s>! Please move it.", user)
@@ -134,7 +134,7 @@ func extractPlate(r *http.Request) string {
 	if len(texts) != 1 {
 		return ""
 	}
-	return plateChars.ReplaceAllString(strings.TrimSpace(texts[0]), "")
+	return strings.ToLower(plateChars.ReplaceAllString(strings.TrimSpace(texts[0]), ""))
 }
 
 func isInChannel(r *http.Request, requiredChannel string) bool {
