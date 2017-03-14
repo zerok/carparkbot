@@ -1,3 +1,0 @@
-package: github.com/zerok/carparkbot
-import:
-- package: gopkg.in/fsnotify.v1

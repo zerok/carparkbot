@@ -54,10 +54,10 @@ $ http POST https://localhost:8080/mapping/ < mapping.csv
 
 ## How to build
 
-First you have to have [glide](https://github.com/Masterminds/glide)
+First you have to have [govendor](https://github.com/kardianos/govendor)
 installed. After that:
 
 ```
-$ glide install
+$ govendor sync
 $ go build
 ```
