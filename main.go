@@ -14,7 +14,8 @@ import (
 
 var (
 	token           string
-	channelName     string
+	rawChannelNames string
+	channelNames    []string
 	enableDM        bool
 	apiToken        string
 	mappingFilePath string
@@ -27,16 +28,18 @@ func init() {
 	flag.StringVar(&token, "token", "", "Command token for validation")
 	flag.StringVar(&apiToken, "api-token", "", "Token required for sending direct messages")
 	flag.BoolVar(&enableDM, "dm", false, "Also DM the car holder")
-	flag.StringVar(&channelName, "channel", "", "Supported channel")
+	flag.StringVar(&rawChannelNames, "channels", "", "Supported channels (comma-separated)")
 	flag.StringVar(&mappingFilePath, "mapping", "", "Path to a mapping file")
 	flag.StringVar(&port, "port", "8080", "Port to run on")
 	flag.Parse()
 
+	channelNames = strings.Split(rawChannelNames, ",")
+
 	if token == "" {
 		log.Fatal("Please specify a token using -token")
 	}
-	if channelName == "" {
-		log.Fatal("Please specify a channel using -channel")
+	if len(channelNames) == 0 {
+		log.Fatal("Please specify channels using -channels")
 	}
 	if enableDM && apiToken == "" {
 		log.Fatal("You have to specify an API token using -api-token if you want to send direct messages.")
@@ -79,8 +82,8 @@ func main() {
 			log.Print(err.Error())
 			http.Error(w, "Failed to parse request", 500)
 		}
-		if !isInChannel(r, channelName) {
-			sendInlineResponse(w, fmt.Sprintf("This command is only supported in #%s", channelName))
+		if !isInChannel(r, channelNames) {
+			sendInlineResponse(w, fmt.Sprintf("This command is only supported in #%s", channelNames))
 			return
 		}
 		plate := extractPlate(r)
@@ -137,7 +140,7 @@ func extractPlate(r *http.Request) string {
 	return strings.ToLower(plateChars.ReplaceAllString(strings.TrimSpace(texts[0]), ""))
 }
 
-func isInChannel(r *http.Request, requiredChannel string) bool {
+func isInChannel(r *http.Request, requiredChannels []string) bool {
 	names, ok := r.Form["channel_name"]
 	if !ok {
 		return false
@@ -145,7 +148,12 @@ func isInChannel(r *http.Request, requiredChannel string) bool {
 	if len(names) < 1 {
 		return false
 	}
-	return names[0] == requiredChannel
+	for _, allowedChannel := range requiredChannels {
+		if allowedChannel == names[0] {
+			return true
+		}
+	}
+	return false
 }
 
 func sendInlineResponse(w http.ResponseWriter, msg string) {
